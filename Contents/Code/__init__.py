@@ -39,6 +39,48 @@ def MainMenu():
   # Grab the whole page
   page = HTML.ElementFromURL(BASE_URL)
 
+  # Get info for next episode preview
+  
+  episodes = page.xpath('''//div[@id='next-episode']''')
+  
+  for ep in episodes:
+    Log("****************************************************************")
+
+    # Use guest name as the title
+    title = ep.xpath('''.//*[@class='thumb-guest-name margin-left-40']/text()''')[0].strip()
+    title = 'Coming Soon: ' + title
+    Log('Got episode: ' + title)
+    
+    # Get episode page URL (translate if relative)
+    url = ep.xpath('.//a')[0].get('href')
+    if url.startswith("http") == False:
+      url = BASE_URL + url
+    Log('URL: ' + url)
+	
+    # Get the episode's summary
+    try:
+      summary = ep.xpath('''.//*[@class='show-desc margin-left-40']/text()''')[0].strip()
+    except:
+      summary = 'None'
+    Log('Summary: ' + summary)
+
+    # TODO: Thumbnail doesn't seem to work...
+    
+    # Get the episode's thumbnail URL (translate if relative)
+    thumb = ep.xpath('.//img')[0].get('src')
+    # Use the higher quality images...
+    thumb = thumb.replace('thumb', 'poster')
+    if thumb.startswith("http") == False:
+      thumb = BASE_URL + thumb
+    Log('Image: ' + thumb)
+    
+    oc.add(VideoClipObject(url = url,
+                           title = title,
+                           thumb = thumb,
+                           summary = summary))
+
+    Log("****************************************************************")
+    
   # Get the various episodes
   episodes = page.xpath('''//div[@class='viewport']//li''')
   
@@ -66,15 +108,17 @@ def MainMenu():
 
     # Get the episode's thumbnail URL (translate if relative)
     thumb = ep.xpath('.//img')[0].get('src')
+    # Use the higher quality images...
+    thumb = thumb.replace('thumb', 'poster')
     if thumb.startswith("http") == False:
             thumb = BASE_URL + thumb
     Log('Image: ' + thumb)
 	
-    key = Callback(EpisodeMenu, url=url)
+    key = Callback(EpisodeMenu, url=url, title=title)
     
     oc.add(DirectoryObject(key = key,
-						   title = title,
-		  	               thumb = thumb,
+						               title = title,
+		  	                   thumb = thumb,
                            summary = summary))
 	
     Log("****************************************************************")
@@ -83,14 +127,43 @@ def MainMenu():
 	
   return oc
 
-def EpisodeMenu(url):
+def EpisodeMenu(url, title):
   ' Constructs the menu for a single episode (episode + bonus content) '
-  oc = ObjectContainer(view_group = 'List', title1 = NAME)  
-  
+  oc = ObjectContainer(view_group = 'List', title1 = title)  
+
+  # Grab the whole page
+  page = HTML.ElementFromURL(url)
+
   Log("----------------------------------------------------------------")
   
-  Log("url: " + url)
+  # Grab info for main episode
   
+  # Get episode title
+  title = page.xpath('''.//*[@id='active-episode-title']/text()''')[0].strip()
+  Log('Got title: ' + title)
+    
+  # Get episode page URL (translate if relative)
+  url = page.xpath('''.//a[@id='active-episode-link']''')[0].get('href')
+  if url.startswith("http") == False:
+    url = BASE_URL + url
+  Log('URL: ' + url)
+	
+  # TODO: Still crappy thumbnails...
+    
+  # Get the episode's thumbnail URL (translate if relative)
+  thumb = page.xpath('''.//*[@id='active-episode-img']/img''')[0].get('src')
+  # Use the higher quality images...
+  thumb = thumb.replace('menu-bar', 'poster')
+  if thumb.startswith("http") == False:
+    thumb = BASE_URL + thumb
+  Log('Image: ' + thumb)
+    
+  oc.add(VideoClipObject(url = url,
+                         title = title,
+                         thumb = thumb))
+
   Log("----------------------------------------------------------------")
+  
+  # TODO: Bonus content (label it in summary as EXTRA: or something
   
   return oc

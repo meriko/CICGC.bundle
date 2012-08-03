@@ -19,5 +19,21 @@
 
 	<key>PlexPluginMode</key>
 	<string>AlwaysOn</string>
+	
+	<key>PlexURLServices</key>
+	<dict>
+		<key>CICGC</key>
+		<dict>
+			<key>Identifier</key>
+			<string>com.plexapp.plugins.cicgc</string>
+			<key>URLPattern</key>
+			<string>http://.*comediansincarsgettingcoffee.com/</string>
+			<key>TestURLs</key>
+			<array>
+				<string>http://comediansincarsgettingcoffee.com</string>
+				<string>http://comediansincarsgettingcoffee.com/larry-david-larry-eats-a-pancake/</string>
+			</array>
+		</dict>
+	</dict>
 </dict>
 </plist>

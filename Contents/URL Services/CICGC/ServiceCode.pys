@@ -1,0 +1,9 @@
+def MetadataObjectForURL(url):
+  ''' Returns metadata object for given URL '''
+  
+  # This is just a dummy function to get the fallback URL service code to work.
+  # It appears there is no function to get MetadataObjects from generic websites.
+  # So, we return an empty object here and then use the fallback service for
+  # media object parsing.  Seems to do the trick...
+  
+  return VideoClipObject()
