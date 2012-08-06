@@ -34,7 +34,7 @@ def Start():
 def MainMenu():
   ''' Constructs the main episode listing.  Since each episode has the main episode
     plus bonus content, make each one a separate directory '''
-  oc = ObjectContainer(view_group = 'List', title1 = NAME)
+  oc = ObjectContainer(title1 = NAME)
 
   # Grab the whole page
   page = HTML.ElementFromURL(BASE_URL)
@@ -82,7 +82,7 @@ def MainMenu():
     Log("****************************************************************")
     
   # Get the various episodes
-  episodes = page.xpath('''//div[@class='viewport']//li''')
+  episodes = page.xpath('''//div[@id='episodes-main']/div[@class='viewport']//li''')
   
   for ep in episodes:
     Log("****************************************************************")
@@ -96,7 +96,7 @@ def MainMenu():
     # Get episode page URL (translate if relative)
     url = ep.xpath('.//a')[0].get('href')
     if url.startswith("http") == False:
-            url = BASE_URL + url
+      url = BASE_URL + url
     Log('URL: ' + url)
 
     # Get the episode's summary
@@ -111,7 +111,7 @@ def MainMenu():
     # Use the higher quality images...
     thumb = thumb.replace('thumb', 'poster')
     if thumb.startswith("http") == False:
-            thumb = BASE_URL + thumb
+      thumb = BASE_URL + thumb
     Log('Image: ' + thumb)
 	
     key = Callback(EpisodeMenu, url=url, title=title)
@@ -123,13 +123,11 @@ def MainMenu():
 	
     Log("****************************************************************")
 	
-  # TODO: next episode preview???
-	
   return oc
 
 def EpisodeMenu(url, title):
   ' Constructs the menu for a single episode (episode + bonus content) '
-  oc = ObjectContainer(view_group = 'List', title1 = title)  
+  oc = ObjectContainer(title1 = title)  
 
   # Grab the whole page
   page = HTML.ElementFromURL(url)
@@ -141,7 +139,7 @@ def EpisodeMenu(url, title):
   # Get episode title
   title = page.xpath('''.//*[@id='active-episode-title']/text()''')[0].strip()
   Log('Got title: ' + title)
-    
+
   # Get episode page URL (translate if relative)
   url = page.xpath('''.//a[@id='active-episode-link']''')[0].get('href')
   if url.startswith("http") == False:
@@ -149,7 +147,7 @@ def EpisodeMenu(url, title):
   Log('URL: ' + url)
 	
   # TODO: Still crappy thumbnails...
-    
+
   # Get the episode's thumbnail URL (translate if relative)
   thumb = page.xpath('''.//*[@id='active-episode-img']/img''')[0].get('src')
   # Use the higher quality images...
@@ -157,13 +155,48 @@ def EpisodeMenu(url, title):
   if thumb.startswith("http") == False:
     thumb = BASE_URL + thumb
   Log('Image: ' + thumb)
-    
+
   oc.add(VideoClipObject(url = url,
                          title = title,
                          thumb = thumb))
 
   Log("----------------------------------------------------------------")
   
-  # TODO: Bonus content (label it in summary as EXTRA: or something
+  # Get the bonus content
+  episodes = page.xpath('''//div[@id='spare-parts']/div[@class='viewport']//li''')
+  
+  # TODO: Real titles for bonus episodes
+  
+  bonusCount = 1
+  
+  for ep in episodes:
+    Log("----------------------------------------------------------------")
+
+    # Use a generic filler for the title (would have to pull the whole 
+    # bonus page to get the title.
+    title = 'Bonus Clip ' + str(bonusCount)
+    Log('Got episode: ' + title)
+    bonusCount += 1
+    
+    # Get episode page URL (translate if relative)
+    url = ep.xpath('.//a')[0].get('href')
+    if url.startswith("http") == False:
+      url = BASE_URL + url
+    Log('URL: ' + url)
+
+    # Get the episode's thumbnail URL (translate if relative)
+    thumb = ep.xpath('.//img')[0].get('src')
+    # Use the higher quality images...
+    thumb = thumb.replace('menu-bar', 'poster')
+    if thumb.startswith("http") == False:
+      thumb = BASE_URL + thumb
+    Log('Image: ' + thumb)
+	
+    oc.add(VideoClipObject(url = url,
+						               title = title,
+		  	                   thumb = thumb))
+	
+    Log("----------------------------------------------------------------")
+
   
   return oc
