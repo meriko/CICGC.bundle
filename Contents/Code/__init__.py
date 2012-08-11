@@ -5,7 +5,7 @@ NAME = 'Comedians in Cars Getting Coffee'
 ART = 'art-default.jpg'
 ICON = 'icon-default.png'
 
-BASE_URL = 'http://www.comediansincarsgettingcoffee.com/'
+BASE_URL = 'http://www.comediansincarsgettingcoffee.com'
 ASSET_URL = 'http://assets.comediansincarsgettingcoffee.com/%s/%s-%s-%s'
 
 ###################################################################################################
@@ -134,7 +134,7 @@ def EpisodeMenu(ep, title):
       title = vid['title']
     Log('Title: ' + title)
     
-    url = '/'.join([BASE_URL, ep['video_slug'], vid['slug']])
+    url = '/'.join([BASE_URL, ep['slug'], vid['slug']])
     Log('URL: ' + url)
     
     thumb = ASSET_URL % (ep['slug'], vid['slug'], ep['key'], 'poster.jpg')
