@@ -63,8 +63,6 @@ def MainMenu():
     except:
       summary = 'None'
     Log('Summary: ' + summary)
-
-    # TODO: Thumbnail doesn't seem to work...
     
     # Get the episode's thumbnail URL (translate if relative)
     thumb = ep.xpath('.//img')[0].get('src')
@@ -146,8 +144,6 @@ def EpisodeMenu(url, title):
     url = BASE_URL + url
   Log('URL: ' + url)
 	
-  # TODO: Still crappy thumbnails...
-
   # Get the episode's thumbnail URL (translate if relative)
   thumb = page.xpath('''.//*[@id='active-episode-img']/img''')[0].get('src')
   # Use the higher quality images...
@@ -173,7 +169,7 @@ def EpisodeMenu(url, title):
     Log("----------------------------------------------------------------")
 
     # Use a generic filler for the title (would have to pull the whole 
-    # bonus page to get the title.
+    # bonus page to get the title)
     title = 'Bonus Clip ' + str(bonusCount)
     Log('Got episode: ' + title)
     bonusCount += 1
@@ -197,6 +193,5 @@ def EpisodeMenu(url, title):
 		  	                   thumb = thumb))
 	
     Log("----------------------------------------------------------------")
-
   
   return oc
