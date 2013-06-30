@@ -1,0 +1,63 @@
+####################################################################################################
+def NormalizeURL(url):
+	return url
+
+####################################################################################################
+def MetadataObjectForURL(url):
+	try:
+		videoDetails = GetVideoDetails(url)
+
+		title = videoDetails['title']
+		show = "Comedians In Cars Getting Coffee"
+		summary = videoDetails['description']
+		thumb = videoDetails['images']['thumb']
+		index = int(videoDetails['episode'])
+		season = int(videoDetails['season'])
+		originally_available_at = Datetime.ParseDate(videoDetails['pubDate'].split('T')[0]).date()
+		duration = int(videoDetails['durationSeconds']) * 1000
+
+		return EpisodeObject(
+				title = title,
+				show = show,
+				summary = summary,
+				thumb = thumb,
+				index = index,
+				season = season,
+				originally_available_at = originally_available_at,
+				duration = duration
+			)
+	except:
+		return None	
+
+####################################################################################################
+def MediaObjectsForURL(url):
+	mediaObjs = []
+
+	# Add HLS
+	mo = MediaObject(
+		container               = 'mpegts',
+		video_codec             = VideoCodec.H264,
+		audio_codec             = AudioCodec.AAC,                 
+		audio_channels          = 2,
+		optimized_for_streaming = True,
+		parts                   = [PartObject(key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)))]
+	)
+	
+	mediaObjs.append(mo)
+	
+	return mediaObjs
+
+####################################################################################################
+def GetVideoDetails(url):
+	pageElement       = HTML.ElementFromURL(url)
+	videosListElement = pageElement.xpath("//script[@type = 'application/json']")[0]
+	videosDetails     = JSON.ObjectFromString(videosListElement.xpath("./text()")[0])
+	videoDetails      = videosDetails['videos'][videosDetails['activeVideo']['video']]
+	
+	return videoDetails
+
+####################################################################################################
+def PlayHLS(url):
+	videoDetails = GetVideoDetails(url)
+
+	return Redirect(videoDetails['mediaUrl'])
