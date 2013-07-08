@@ -40,16 +40,23 @@ def MediaObjectsForURL(url):
 		mo = MediaObject(
 			container               = 'mpegts',
 			video_codec             = VideoCodec.H264,
-			audio_codec             = AudioCodec.AAC,                 
+			audio_codec             = AudioCodec.AAC,
+			video_resolution        = '720',                
 			audio_channels          = 2,
 			optimized_for_streaming = True,
 			parts                   = [PartObject(key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)))]
 		)
+
 	else:
+		
 		mo = MediaObject(
-				protocol       = 'webkit',
-				audio_channels = 2,
-				parts          = [PartObject(key = Callback(PlayVideo, url = url))]
+			container               = Container.MP4,
+			video_codec             = VideoCodec.H264,
+			audio_codec             = AudioCodec.AAC,
+			video_resolution        = '480',                
+			audio_channels          = 2,
+			optimized_for_streaming = True,
+			parts                   = [PartObject(key = Callback(PlayVideo, url = url))]
 		)
 	
 	mediaObjs.append(mo)
@@ -72,11 +79,17 @@ def PlayHLS(url):
 	return Redirect(videoDetails['mediaUrl'])
 
 ####################################################################################################
-@indirect 
 def PlayVideo(url):
 	pageElement = HTML.ElementFromURL(url)
 	
-	videoID    = RE_CRACKLE_VIDEO_ID.search(pageElement.xpath("//head//link[@rel='video_src']/@href")[0]).group(0)
-	crackleURL = 'http://www.crackle.com/c/comedians-in-cars-getting-coffee/#id=' + videoID
+	videoID = RE_CRACKLE_VIDEO_ID.search(pageElement.xpath("//head//link[@rel='video_src']/@href")[0]).group(0)
+	videoID = hex(int(videoID)).split('x')[1]
 	
-	return IndirectResponse(VideoClipObject, key = WebVideoURL(url = crackleURL))
+	xmlElement = XML.ElementFromURL('http://www.crackle.com/app/vidwallcache.aspx?flags=-1&o=12&fpl=2119386&fx=&partner=20')
+	for item in xmlElement.xpath("//items//i"):
+		if item.xpath("./@id")[0] == str(videoID):
+			finalURL = "http://media-us-am.crackle.com/" + item.xpath("./@p")[0] + "480p.mp4" 
+	
+			return Redirect(finalURL)
+			
+	raise Ex.MediaNotAvailable
