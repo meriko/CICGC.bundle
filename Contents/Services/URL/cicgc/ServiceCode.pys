@@ -1,3 +1,5 @@
+RE_CRACKLE_VIDEO_ID = Regex('(?<=id=)[0-9]+')
+
 ####################################################################################################
 def NormalizeURL(url):
 	return url
@@ -33,15 +35,22 @@ def MetadataObjectForURL(url):
 def MediaObjectsForURL(url):
 	mediaObjs = []
 
-	# Add HLS
-	mo = MediaObject(
-		container               = 'mpegts',
-		video_codec             = VideoCodec.H264,
-		audio_codec             = AudioCodec.AAC,                 
-		audio_channels          = 2,
-		optimized_for_streaming = True,
-		parts                   = [PartObject(key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)))]
-	)
+	if Client.Platform in ('Android', 'iOS', 'Roku'):
+		# Add HLS
+		mo = MediaObject(
+			container               = 'mpegts',
+			video_codec             = VideoCodec.H264,
+			audio_codec             = AudioCodec.AAC,                 
+			audio_channels          = 2,
+			optimized_for_streaming = True,
+			parts                   = [PartObject(key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)))]
+		)
+	else:
+		mo = MediaObject(
+				protocol       = 'webkit',
+				audio_channels = 2,
+				parts          = [PartObject(key = Callback(PlayVideo, url = url))]
+		)
 	
 	mediaObjs.append(mo)
 	
@@ -61,3 +70,13 @@ def PlayHLS(url):
 	videoDetails = GetVideoDetails(url)
 
 	return Redirect(videoDetails['mediaUrl'])
+
+####################################################################################################
+@indirect 
+def PlayVideo(url):
+	pageElement = HTML.ElementFromURL(url)
+	
+	videoID    = RE_CRACKLE_VIDEO_ID.search(pageElement.xpath("//head//link[@rel='video_src']/@href")[0]).group(0)
+	crackleURL = 'http://www.crackle.com/c/comedians-in-cars-getting-coffee/#id=' + videoID
+	
+	return IndirectResponse(VideoClipObject, key = WebVideoURL(url = crackleURL))
