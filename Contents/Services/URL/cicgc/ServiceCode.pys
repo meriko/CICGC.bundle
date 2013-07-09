@@ -88,7 +88,7 @@ def PlayVideo(url):
 	xmlElement = XML.ElementFromURL('http://www.crackle.com/app/vidwallcache.aspx?flags=-1&o=12&fpl=2119386&fx=&partner=20')
 	for item in xmlElement.xpath("//items//i"):
 		if item.xpath("./@id")[0] == str(videoID):
-			finalURL = "http://media-us-am.crackle.com/" + item.xpath("./@p")[0] + "480p.mp4" 
+			finalURL = "http://media-us-am.crackle.com/" + item.xpath("./@p")[0] + "480p_1mbps.mp4" 
 	
 			return Redirect(finalURL)
 			
