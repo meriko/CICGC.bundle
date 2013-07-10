@@ -1,5 +1,3 @@
-RE_CRACKLE_VIDEO_ID = Regex('(?<=id=)[0-9]+')
-
 ####################################################################################################
 def NormalizeURL(url):
 	return url
@@ -80,10 +78,8 @@ def PlayHLS(url):
 
 ####################################################################################################
 def PlayVideo(url):
-	pageElement = HTML.ElementFromURL(url)
-	
-	videoID = RE_CRACKLE_VIDEO_ID.search(pageElement.xpath("//head//link[@rel='video_src']/@href")[0]).group(0)
-	videoID = hex(int(videoID)).split('x')[1]
+	videoDetails = GetVideoDetails(url)
+	videoID      = hex(int(videoDetails['mediaId'])).split('x')[1]
 	
 	playPath = None
 	
