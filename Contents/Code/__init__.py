@@ -1,53 +1,94 @@
-TITLE = 'Comedians In Cars Getting Coffee'
-
-ART  = 'art-default.jpg'
-ICON = 'icon-default.png'
-
+TITLE    = 'Comedians In Cars Getting Coffee'
+PREFIX   = '/video/cicgc'
+ART      = 'art-default.jpg'
+THUMB    = 'icon-default.png'
 BASE_URL = 'http://comediansincarsgettingcoffee.com'
 
 ###################################################################################################
-
 def Start():
-	Plugin.AddPrefixHandler('/video/cicgc', MainMenu, TITLE, ICON, ART)
-	Plugin.AddViewGroup('List', viewMode = 'List', mediaType = 'items')
-
 	# Set the default ObjectContainer attributes
 	ObjectContainer.title1     = TITLE
-	ObjectContainer.view_group = 'List'
 	ObjectContainer.art        = R(ART)
-
-	# Default icons for DirectoryObject and VideoClipObject in case there isn't an image
-	DirectoryObject.thumb = R(ICON)
-	DirectoryObject.art   = R(ART)
-	VideoClipObject.thumb = R(ICON)
-	VideoClipObject.art   = R(ART)
 
 	# Set the default cache time
 	HTTP.CacheTime = CACHE_1HOUR
 
 ###################################################################################################
+@handler(PREFIX, TITLE, thumb = THUMB, art = ART)
 def MainMenu():
 	oc = ObjectContainer()
 	
 	pageElement = HTML.ElementFromURL(BASE_URL)
+
+	videosListElement = pageElement.xpath("//script[@type = 'application/json']")[0]
+	videosDetails     = JSON.ObjectFromString(videosListElement.xpath("./text()")[0])
 	
-	# Add shows by parsing the site
-	for item in pageElement.xpath("//*[contains(@class, 'all-episodes')]//li"):
-		video = {}
+	seasons = []
+	
+	for item in videosDetails['videos']:
+		video = videosDetails['videos'][item]
+		
+		if video['type'] == 'episode':
+			if not video['season'] in seasons:
+				oc.add(
+					DirectoryObject(
+						key = Callback(
+								Episodes, 
+								season = video['season']
+						),
+						title = "Season " + video['season']
+					)
+				)
+				seasons.append(video['season'])			
 
-		video["url"]  = BASE_URL + item.xpath(".//a/@href")[0]
-		video["img"]  = item.xpath(".//img/@src")[0]
-		video["name"] = item.xpath(".//h2//span/text()")[0]
-		video["desc"] = item.xpath(".//p/text()")[0].strip()
-
-		oc.add(
-			EpisodeObject(
-				url = video["url"],
-				title = video["name"],
-				show = TITLE,
-				summary = video["desc"],
-				thumb = video["img"])
-		)
-			 
 	return oc
 
+###################################################################################################
+@route(PREFIX + '/episodes')
+def Episodes(season):
+	oc = ObjectContainer(title1 = "Season " + season)
+	
+	pageElement = HTML.ElementFromURL(BASE_URL)
+
+	videosListElement = pageElement.xpath("//script[@type = 'application/json']")[0]
+	videosDetails     = JSON.ObjectFromString(videosListElement.xpath("./text()")[0])
+	
+	episodes = []
+	
+	for item in videosDetails['videos']:
+		video = videosDetails['videos'][item]
+		
+		if video['type'] == 'episode' and season == video['season']:
+			episode = {}
+			
+			episode['url']                     = BASE_URL + "/" + video['slug']
+			episode['title']                   = video['title']
+			episode['summary']                 = video['description']
+			episode['originally_available_at'] = Datetime.ParseDate(video['pubDate'].split('T')[0]).date()
+			episode['season']                  = int(video['season'])
+			episode['index']                   = int(video['episode'])
+			episode['thumb']                   = video['images']['thumb']
+			episode['art']                     = video['images']['poster']
+			episode['duration']                = int(video['durationSeconds']) * 1000
+			
+			episodes.append(episode)		
+			
+	sortedEpisodes = sorted(episodes, key=lambda episode: episode['index'], reverse = True)
+	
+	for episode in sortedEpisodes:
+		oc.add(
+			EpisodeObject(
+				url = episode['url'],
+				title = episode['title'],
+				summary = episode['summary'],
+				originally_available_at = episode['originally_available_at'],
+				show = TITLE,
+				season = episode['season'],
+				index = episode['index'],
+				thumb = episode['thumb'],
+				art = episode['art'],
+				duration = episode['duration']
+			)
+		)
+	
+	return oc

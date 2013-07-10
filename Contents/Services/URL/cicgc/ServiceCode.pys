@@ -9,24 +9,16 @@ def MetadataObjectForURL(url):
 	try:
 		videoDetails = GetVideoDetails(url)
 
-		title = videoDetails['title']
-		show = "Comedians In Cars Getting Coffee"
-		summary = videoDetails['description']
-		thumb = videoDetails['images']['thumb']
-		index = int(videoDetails['episode'])
-		season = int(videoDetails['season'])
-		originally_available_at = Datetime.ParseDate(videoDetails['pubDate'].split('T')[0]).date()
-		duration = int(videoDetails['durationSeconds']) * 1000
-
 		return EpisodeObject(
-				title = title,
-				show = show,
-				summary = summary,
-				thumb = thumb,
-				index = index,
-				season = season,
-				originally_available_at = originally_available_at,
-				duration = duration
+				title = videoDetails['title'],
+				show = "Comedians In Cars Getting Coffee",
+				summary = videoDetails['description'],
+				thumb = videoDetails['images']['thumb'],
+				art = videoDetails['images']['poster'],
+				index = int(videoDetails['episode']),
+				season = int(videoDetails['season']),
+				originally_available_at = Datetime.ParseDate(videoDetails['pubDate'].split('T')[0]).date(),
+				duration = int(videoDetails['durationSeconds']) * 1000
 			)
 	except:
 		return None	
@@ -35,7 +27,7 @@ def MetadataObjectForURL(url):
 def MediaObjectsForURL(url):
 	mediaObjs = []
 
-	if Client.Platform in ('Android', 'iOS', 'Roku'):
+	if Client.Platform in ('Android', 'iOS', 'Roku') or (Client.Platform == 'Safari' and Platform.OS == 'MacOSX'):
 		# Add HLS
 		mo = MediaObject(
 			container               = 'mpegts',
@@ -44,11 +36,15 @@ def MediaObjectsForURL(url):
 			video_resolution        = '720',                
 			audio_channels          = 2,
 			optimized_for_streaming = True,
-			parts                   = [PartObject(key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)))]
+			parts                   = [
+				PartObject(
+					key = HTTPLiveStreamURL(Callback(PlayHLS, url = url)), 
+				)
+			]
 		)
 
 	else:
-		
+		# Add MP4
 		mo = MediaObject(
 			container               = Container.MP4,
 			video_codec             = VideoCodec.H264,
@@ -56,9 +52,13 @@ def MediaObjectsForURL(url):
 			video_resolution        = '480',                
 			audio_channels          = 2,
 			optimized_for_streaming = True,
-			parts                   = [PartObject(key = Callback(PlayVideo, url = url))]
+			parts                   = [
+				PartObject(
+					key = Callback(PlayVideo, url = url),
+				)
+			]
 		)
-	
+		
 	mediaObjs.append(mo)
 	
 	return mediaObjs
@@ -85,11 +85,16 @@ def PlayVideo(url):
 	videoID = RE_CRACKLE_VIDEO_ID.search(pageElement.xpath("//head//link[@rel='video_src']/@href")[0]).group(0)
 	videoID = hex(int(videoID)).split('x')[1]
 	
+	playPath = None
+	
 	xmlElement = XML.ElementFromURL('http://www.crackle.com/app/vidwallcache.aspx?flags=-1&o=12&fpl=2119386&fx=&partner=20')
+	
 	for item in xmlElement.xpath("//items//i"):
 		if item.xpath("./@id")[0] == str(videoID):
-			finalURL = "http://media-us-am.crackle.com/" + item.xpath("./@p")[0] + "480p_1mbps.mp4" 
+			playPath = item.xpath("./@p")[0]
+			break	
 	
-			return Redirect(finalURL)
-			
-	raise Ex.MediaNotAvailable
+	if playPath:
+		return Redirect("http://media-us-am.crackle.com/" + playPath +  "480p_1mbps.mp4")
+	else:
+		raise Ex.MediaNotAvailable
